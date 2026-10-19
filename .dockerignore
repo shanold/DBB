@@ -1,0 +1,9 @@
+node_modules
+.git
+.env
+data
+bridge-lab-site
+upload
+generated_images
+*.zip
+*.tar.gz
