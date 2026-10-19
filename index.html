@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#14283b">
+  <meta name="description" content="Draw, test, and understand truss bridges in your browser.">
+  <title>Bridge Lab — Build to understand</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-icon">⌁</span><div><strong>BRIDGE<span>LAB</span></strong><small>STRUCTURAL DESIGN STUDIO</small></div></div>
+      <div class="top-center"><span class="project-tag">PROJECT 01</span><input id="bridge-name" aria-label="Bridge name" maxlength="60" value="First crossing"><span class="unsaved-dot" id="unsaved-dot" title="Unsaved changes"></span></div>
+      <div class="top-actions">
+        <button class="quiet" id="new-btn">New</button>
+        <button class="quiet" id="load-btn">Open</button>
+        <button class="quiet" id="save-btn">Save</button>
+        <button class="quiet" id="challenges-btn">Challenges</button>
+        <button class="quiet" id="teacher-btn">Challenge settings</button><a class="quiet classroom-link" href="/classroom">Classroom</a>
+        <div class="split"></div>
+        <button class="quiet icon-text" id="import-btn">Import</button>
+        <button class="quiet icon-text" id="export-btn">Export</button>
+        <input type="file" id="file-input" accept=".json,application/json" hidden>
+      </div>
+    </header>
+    <div class="workspace">
+      <aside class="left-rail">
+        <div class="rail-head"><span class="eyebrow">01 / DESIGN</span><h2>Your toolkit</h2><p>Shape a bridge, then send a loaded truck across it.</p></div>
+        <div class="tool-group">
+          <div class="group-label">DRAWING TOOLS <span>SHORTCUT</span></div>
+          <button class="tool active" data-tool="select"><span class="tool-glyph">↖</span><span><b>Select</b><small>Inspect or move</small></span><kbd>V</kbd></button>
+          <button class="tool" data-tool="joint"><span class="tool-glyph">⊕</span><span><b>Joint</b><small>Click on the grid</small></span><kbd>J</kbd></button>
+          <button class="tool" data-tool="member"><span class="tool-glyph">╱</span><span><b>Member</b><small>Connect two joints</small></span><kbd>M</kbd></button>
+          <button class="tool" data-tool="erase"><span class="tool-glyph">⌫</span><span><b>Erase</b><small>Remove a part</small></span><kbd>E</kbd></button>
+          <p class="selection-hint">Select: Shift-click for several parts, or drag a box on empty space.</p>
+        </div>
+        <div class="tool-group">
+          <div class="group-label">BUILD WITH</div>
+          <label class="field-label" for="section-select">Member profile</label>
+          <select id="section-select"></select>
+          <p class="field-hint">Select a member to change its profile. New members use this choice.</p>
+          <label class="field-label" for="analysis-model">Structural model</label>
+          <select id="analysis-model"><option value="frame">Road-bearing frame · bending</option><option value="truss">Ideal truss · joint loads</option></select>
+          <p class="field-hint" id="model-hint">Axles load deck members between joints. Members carry axial force, shear, and bending.</p>
+          <label class="field-label" for="joint-connection">Selected joints</label>
+          <select id="joint-connection" disabled><option value="rigid">Rigid — transfers bending</option><option value="hinge">Hinge — rotates freely</option><option value="mixed" disabled>Mixed connections</option></select>
+          <p class="field-hint" id="connection-hint">Select one or more joints to change their connection. New joints are rigid.</p>
+          <button class="outline-action" id="mirror-btn"><span>⇄</span> Mirror across span</button>
+          <button class="outline-action" id="delete-selected-btn" disabled><span>⌫</span> Delete selected <small id="selection-count"></small></button>
+          <button class="outline-action danger-action" id="clear-btn"><span>×</span> Clear design</button>
+        </div>
+        <div class="rail-footer"><div class="lesson-icon">✦</div><b>Try this</b><p>Remove a diagonal and run the test. What happens when the triangles disappear?</p></div>
+      </aside>
+      <main class="main">
+        <div class="canvas-top"><div><span class="eyebrow">THE DRAWING BOARD</span><h1>Design your crossing<span class="period">.</span></h1><p>Every line carries a force. Make yours count.</p></div><div class="canvas-controls"><button id="undo-btn" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button><button id="redo-btn" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button><span id="zoom-label">30 m span</span></div></div>
+        <div class="challenge-banner" id="challenge-banner" hidden></div>
+        <div class="board-shell">
+          <div class="board-overline"><span class="board-led"></span><span id="board-status">EDIT MODE</span><span class="board-right">SIDE ELEVATION · 1 m GRID</span></div>
+          <div class="board" id="board">
+            <svg id="drawing" role="img" aria-label="Editable bridge truss drawing" viewBox="0 0 1000 540" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="board-help" id="board-help">Select a tool to begin building</div>
+          </div>
+          <div class="board-foot"><div class="legend"><span><i class="legend-line road"></i> Road (not a member)</span><span><i class="legend-line neutral"></i> Member</span><span><i class="legend-line tension"></i> Tension</span><span><i class="legend-line compression"></i> Compression</span><span><i class="legend-line bending"></i> Bending</span><span>◎ Hinge</span><span><i class="legend-dot"></i> Joint</span><span><i class="legend-open">!</i> No connection</span></div><label class="load-toggle"><input id="show-load-labels" type="checkbox"> Show member capacity %</label></div>
+        </div>
+        <div class="testbar"><div class="test-left"><button class="primary" id="test-btn"><span>▶</span> Test bridge</button><button class="secondary" id="reset-test-btn" hidden>Back to design</button><div class="test-copy"><b id="test-title">Ready when you are</b><small id="test-subtitle">A two-axle truck will cross your bridge.</small></div></div><div class="test-right"><label for="timeline"><span id="timeline-title">TRUCK POSITION</span> <span id="position-label">—</span></label><input type="range" id="timeline" min="0" max="60" value="0" disabled></div></div>
+        <div class="bottom-note"><span>CLASSROOM SIMULATION</span> Road needs structural members underneath · 2D beam bending with rigid or hinged joints · moving loads are quasi-static · collapse motion is illustrative</div>
+      </main>
+      <aside class="right-rail">
+        <div class="results-head"><span class="eyebrow">02 / ANALYSIS</span><h2>Performance</h2><p id="analysis-caption">Your design at a glance</p></div>
+        <div class="stat-grid"><div class="stat"><small>EST. MATERIAL COST</small><b id="cost-stat">—</b><span>material only</span></div><div class="stat"><small>BRIDGE WEIGHT</small><b id="weight-stat">—</b><span>steel + aluminum</span></div><div class="stat"><small>JOINTS</small><b id="joints-stat">—</b><span>connection points</span></div><div class="stat"><small>MEMBERS</small><b id="members-stat">—</b><span>structural elements</span></div></div>
+        <div class="analysis-card" id="analysis-card"><div class="card-label"><span class="pulse"></span> STRUCTURAL STATUS</div><h3 id="result-heading">Awaiting test</h3><p id="result-copy">Run the load test to see forces, weak points, and a pass or fail result.</p><div class="meter-track"><span id="util-meter"></span></div><div class="meter-ends"><span>0% load</span><span id="util-label">—</span></div></div>
+        <div class="inspect"><div class="inspect-heading"><span class="eyebrow">SELECTION</span><span class="inspect-mark">↗</span></div><div id="inspector"><div class="empty-inspector"><span>⌁</span><b>Click a member</b><p>Select a beam on the drawing to see what it’s doing.</p></div></div></div>
+        <div class="teacher-tip"><b>Why did it fail?</b><p id="explain-text">A failed member turns red. Click it after testing to see its force, capacity, and a way to improve the design.</p></div>
+      </aside>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <dialog id="route-dialog"><h2 id="route-title">Opening challenge…</h2><p id="route-copy">Loading your teacher’s starter design and goals.</p><a class="secondary classroom-link" href="/">Open free build</a></dialog><dialog id="open-dialog"><div class="dialog-head"><div><span class="eyebrow">SAVED DESIGNS</span><h2>Open a bridge</h2></div><button id="close-dialog" aria-label="Close">×</button></div><div id="saved-list"></div></dialog>
+    <dialog id="teacher-dialog" class="challenge-dialog"><div class="dialog-head"><div><span class="eyebrow">TEACHER MODE</span><h2>Create a challenge</h2></div><button id="close-teacher" aria-label="Close">×</button></div>
+      <p class="dialog-intro">The bridge on your board becomes the starter design. Save it to your classroom, then assign it to a class to get a student URL. You can also export a JSON copy.</p>
+      <form id="teacher-form"><label>Challenge title<input name="title" maxlength="80" required placeholder="The river crossing"></label><label>Instructions<textarea name="instructions" maxlength="600" rows="3" required placeholder="Build a bridge that holds the truck within budget."></textarea></label>
+        <div class="form-row"><label>Material budget (optional)<input name="maxCost" type="text" inputmode="decimal" maxlength="32" placeholder="e.g. $12,000" aria-describedby="budget-help"><small id="budget-help">$ and commas accepted. Leave blank for no budget.</small></label><label>Required crossing distance (metres)<input name="span" type="number" min="5" max="100" step="any" required value="30" aria-describedby="crossing-help"><small id="crossing-help">Distance between the two banks and supports.</small></label><label>Force units<select name="forceUnit" id="force-unit"><option value="N">Newtons (N)</option><option value="kN" selected>Kilonewtons (kN)</option><option value="lbf">Pounds-force (lbf)</option><option value="kip">Kips (1,000 lbf)</option><option value="kgf">Kilograms-force (kgf)</option></select></label></div>
+        <p class="field-hint">Changing the crossing distance moves the far bank and stretches the starter design while keeping its connections. Switching force units converts the values automatically. kgf means kilograms-force, not mass.</p>
+        <div class="form-row"><label>Structural model<select name="analysisModel"><option value="frame">Road-bearing frame · bending</option><option value="truss">Ideal truss · joint loads</option></select></label><label>Road weight (<span data-force-unit>kN</span>/m)<input name="roadKnPerM" type="number" min="0" step="any" value="1.6" required></label></div>
+        <p class="field-hint">Frame mode applies axles between joints and includes bending. Ideal-truss mode transfers road loads to joints and checks axial force only. Road weight increases with span.</p>
+        <label>Load type<select name="loadType" id="load-type"><option value="moving">Moving trucks</option><option value="static">Stationary center load</option><option value="combined">Moving trucks + center load</option></select></label>
+        <fieldset id="truck-settings"><legend>Moving trucks</legend><div class="form-row"><label>Number of trucks<input name="truckCount" type="number" min="1" max="5" step="1" required value="1"></label><label>Spacing, front-to-front (m)<input name="truckSpacing" type="number" min="8" max="100" step="any" required value="10"></label></div><div class="form-row"><label>Front axle (<span data-force-unit>kN</span>)<input name="frontKn" type="number" min="0" step="any" required value="40"></label><label>Rear axle (<span data-force-unit>kN</span>)<input name="rearKn" type="number" min="0" step="any" required value="120"></label></div></fieldset>
+        <fieldset id="static-settings" hidden><legend>Stationary load</legend><label>Downward force at center (<span data-force-unit>kN</span>)<input name="centerKn" type="number" min="0" step="any" required value="160"></label><p class="field-hint">The load stays at the midpoint throughout the test.</p></fieldset>
+        <div class="dialog-actions"><button class="secondary" type="button" id="export-teacher">Export JSON</button><button class="secondary" type="button" id="save-local-challenge">Save locally</button><button class="primary" type="submit">Save to classroom</button></div></form></dialog>
+    <dialog id="challenges-dialog" class="challenge-dialog"><div class="dialog-head"><div><span class="eyebrow">CLASSROOM CHALLENGES</span><h2>Choose a challenge</h2></div><button id="close-challenges" aria-label="Close">×</button></div><p class="dialog-intro">Start a saved challenge or import one your teacher shared. The starter design will replace the current board.</p><div id="challenge-list"></div><div class="dialog-actions"><button class="secondary" id="import-challenge">Import challenge JSON</button></div><input type="file" id="challenge-file" accept=".json,application/json" hidden></dialog>
+  </div>
+  <script type="module" src="/src/app.mjs"></script>
+</body>
+</html>

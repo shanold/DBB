@@ -1,0 +1,12 @@
+services:
+  bridge-lab:
+    build: .
+    container_name: bridge-lab
+    ports:
+      - "8095:80"
+    environment:
+      BRIDGE_SETUP_TOKEN: ${BRIDGE_SETUP_TOKEN:?Set BRIDGE_SETUP_TOKEN in .env before starting}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
